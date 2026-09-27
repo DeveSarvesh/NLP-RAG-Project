@@ -1,0 +1,52 @@
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest & test cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Variables & API Keys (DO NOT COMMIT SECRETS)
+.env
+.env.local
+.env.*.local
+!.env.example
+*.pem
+*.key
+
+# IDEs & OS generated files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Project-specific RAG Data & Artifacts
+data/uploads/*
+!data/uploads/.gitkeep
+data/indexes/*
+!data/indexes/.gitkeep
+*.bin
+*.index
+*.pkl
+*.parquet
+
+# ML Model & Embedding Caches
+.cache/
+huggingface/
+
+# Logs & Temporary files
+*.log
+tmp/
+temp/

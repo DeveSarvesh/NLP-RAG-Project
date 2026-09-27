@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Assistant - Smart Document Q&A</title>
+    <meta name="description" content="Intelligent Multi-Document RAG Assistant using Sentence Transformers, FAISS Semantic Retrieval, and Google Gemini with Source Grounding.">
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="theme-light">
+    <div class="app-layout">
+        <!-- ==================== 1. LEFT SIDEBAR ==================== -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="app-logo">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        <path d="M8 9h8"></path>
+                        <path d="M8 13h5"></path>
+                    </svg>
+                </div>
+                <div class="app-branding">
+                    <h1 class="app-title">RAG Assistant</h1>
+                    <p class="app-subtitle">Smart Document Q&A</p>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="sidebar-nav">
+                <a href="#chat" class="nav-item active" id="navHome">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    <span>Home</span>
+                </a>
+                <a href="#upload" class="nav-item" id="navUpload" onclick="openModal('uploadModal')">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <span>Upload Documents</span>
+                </a>
+                <a href="#chat" class="nav-item" id="navChat">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                    </svg>
+                    <span>Chat</span>
+                </a>
+                <a href="#library" class="nav-item" id="navLibrary" onclick="openModal('libraryModal')">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    <span>Document Library</span>
+                </a>
+                <a href="#settings" class="nav-item" id="navSettings" onclick="openModal('settingsModal')">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <!-- System Status Card -->
+            <div class="system-status-card">
+                <div class="status-header">
+                    <span class="status-label">System Status</span>
+                </div>
+                <div class="status-indicator">
+                    <span class="status-dot pulsing"></span>
+                    <span class="status-text" id="systemStatusText">Ready</span>
+                </div>
+                <p class="status-subtext" id="systemStatusSub">All systems operational</p>
+            </div>
+
+            <!-- Quick Stats Section -->
+            <div class="quick-stats-section">
+                <span class="section-title">Quick Stats</span>
+                
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper">
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-name">Documents</span>
+                        <span class="stat-value" id="statDocCount">1</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper">
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-name">Total Chunks</span>
+                        <span class="stat-value" id="statTotalChunks">3</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper">
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-name">Index Size</span>
+                        <span class="stat-value" id="statIndexSize">3</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper">
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-name">Model</span>
+                        <span class="stat-value model-name" id="statModelName">gemini-2.5-flash</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Footer -->
+            <div class="sidebar-footer">
+                <div class="footer-logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                    </svg>
+                </div>
+                <div class="footer-info">
+                    <span class="footer-title">RAG Project</span>
+                    <span class="footer-sub">Build · Retrieve · Generate</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ==================== 2. MAIN CENTER AREA ==================== -->
+        <main class="main-content">
+            <!-- Top App Bar -->
+            <header class="top-app-header">
+                <div class="header-titles">
+                    <h2 class="header-main-title">Ask Questions About Your Document</h2>
+                    <p class="header-main-subtitle">Get accurate, grounded answers with source citations</p>
+                </div>
+
+                <div class="header-actions">
+                    <!-- Theme Toggle -->
+                    <button class="theme-toggle-btn" id="themeToggle" title="Toggle Theme">
+                        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                    </button>
+
+                    <!-- Active Document Capsule -->
+                    <div class="active-doc-capsule" id="activeDocCapsule" onclick="openModal('libraryModal')">
+                        <div class="doc-capsule-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                        </div>
+                        <div class="doc-capsule-info">
+                            <span class="doc-filename" id="capsuleDocName">sample_nlp_paper.pdf</span>
+                            <span class="doc-loaded-tag">
+                                <span class="green-dot"></span>
+                                <span id="capsuleStatus">1 document loaded</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Control Ribbon Bar -->
+            <section class="control-ribbon-bar">
+                <div class="control-item">
+                    <label for="topKSelect" class="control-label">Top K Results</label>
+                    <div class="custom-select-wrapper">
+                        <select id="topKSelect" class="control-select">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3" selected>3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="8">8</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-item threshold-item">
+                    <div class="threshold-label-row">
+                        <label for="thresholdSlider" class="control-label">Relevance Threshold</label>
+                        <span class="threshold-badge" id="thresholdValBadge">0.15</span>
+                    </div>
+                    <input type="range" id="thresholdSlider" min="0.0" max="0.80" step="0.05" value="0.15" class="control-slider">
+                </div>
+
+                <div class="ribbon-badges">
+                    <div class="pill-badge green-badge">
+                        <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span id="badgeChunksCount">3 chunks in index</span>
+                    </div>
+
+                    <div class="pill-badge blue-badge">
+                        <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                        <span id="badgeEmbedDim">384 embedding dimension</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chat Stream Zone -->
+            <section class="chat-zone" id="chatZone">
+                <div class="chat-messages-container" id="chatMessages">
+                    <!-- Initial Welcome / Example Q&A -->
+                    <div class="chat-message user-msg">
+                        <div class="msg-bubble">
+                            <div class="user-avatar-tag">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                            </div>
+                            <p class="msg-text">Why do language models hallucinate and need external memory?</p>
+                        </div>
+                        <span class="msg-timestamp">10:24 AM</span>
+                    </div>
+
+                    <div class="chat-message assistant-msg">
+                        <div class="assistant-avatar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                                <circle cx="12" cy="5" r="2"></circle>
+                                <path d="M12 7v4"></path>
+                                <line x1="8" y1="16" x2="8" y2="16"></line>
+                                <line x1="16" y1="16" x2="16" y2="16"></line>
+                            </svg>
+                        </div>
+                        <div class="assistant-body">
+                            <div class="assistant-content">
+                                <p>Language models can hallucinate because they generate responses based on patterns learned from their training data, which can lead to incorrect or fabricated information when they encounter knowledge gaps. External memory helps by providing access to reliable, up-to-date information, allowing the model to ground its responses in factual sources rather than relying solely on its internal knowledge.</p>
+                                
+                                <p class="key-points-title"><strong>Key Points:</strong></p>
+                                <ul class="key-points-list">
+                                    <li>Hallucinations occur due to limitations in the model's training data, knowledge cutoffs, and context window. <span class="citation-tag" onclick="inspectCitation('sample_nlp_paper.pdf', 1)">[Doc: sample_nlp_paper.pdf, Page: 1]</span></li>
+                                    <li>External memory (e.g., vector databases, dense retrieval systems) provides factual context to reduce hallucinations. <span class="citation-tag" onclick="inspectCitation('sample_nlp_paper.pdf', 1)">[Doc: sample_nlp_paper.pdf, Page: 1]</span></li>
+                                    <li>RAG combines retrieval with generation to improve accuracy and reliability. <span class="citation-tag" onclick="inspectCitation('sample_nlp_paper.pdf', 1)">[Doc: sample_nlp_paper.pdf, Page: 1]</span></li>
+                                </ul>
+                            </div>
+
+                            <div class="assistant-footer">
+                                <span class="msg-timestamp">10:24 AM</span>
+                                <div class="grounded-pill">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <span>Grounded Answer</span>
+                                </div>
+                            </div>
+
+                            <!-- Sources Row -->
+                            <div class="sources-container">
+                                <span class="sources-heading">Sources (3)</span>
+                                <div class="sources-chips-row">
+                                    <button class="source-chip" onclick="inspectChunkByPage(1)">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                        <span>Page 1</span>
+                                    </button>
+                                    <button class="source-chip" onclick="inspectChunkByPage(2)">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                        <span>Page 2</span>
+                                    </button>
+                                    <button class="source-chip" onclick="inspectChunkByPage(3)">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                        <span>Page 3</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Floating Input Card -->
+                <div class="chat-input-wrapper">
+                    <form id="queryForm" class="chat-input-card">
+                        <input type="text" id="questionInput" placeholder="Type your question here..." autocomplete="off" required>
+                        <button type="submit" id="sendBtn" class="send-btn" title="Send Question">
+                            <svg class="send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                            <span>Send</span>
+                        </button>
+                    </form>
+                    <div class="input-helper-row">
+                        <span class="helper-prompt" onclick="setQueryPrompt('What is the recommended chunk size and why is overlap important?')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            Try asking about methodology, results, or specific concepts from the document.
+                        </span>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- ==================== 3. RIGHT PANEL ==================== -->
+        <aside class="right-panel">
+            <!-- Retrieved Context Section -->
+            <div class="context-panel-header">
+                <div class="panel-title-row">
+                    <div class="panel-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                    </div>
+                    <h3 class="panel-title">Retrieved Context</h3>
+                </div>
+                <span class="chunk-count-badge" id="rightPanelChunkCount">3 chunks</span>
+            </div>
+
+            <!-- List of Retrieved Chunk Cards -->
+            <div class="retrieved-chunks-list" id="retrievedChunksList">
+                <!-- Chunk Card 1 -->
+                <div class="chunk-card" onclick="inspectChunkDetail(0)">
+                    <div class="chunk-card-header">
+                        <span class="chunk-meta-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                            Page 1 · Chunk 1
+                        </span>
+                        <span class="similarity-score-pill">0.3810</span>
+                    </div>
+                    <p class="chunk-text-snippet">NLP Research Notes: Dense Retrieval & RAG Foundations. Language models can hallucinate due to limited context and training data...</p>
+                    <div class="chunk-card-footer">
+                        <span class="expand-label">Click to view passage</span>
+                        <svg class="expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    </div>
+                </div>
+
+                <!-- Chunk Card 2 -->
+                <div class="chunk-card" onclick="inspectChunkDetail(1)">
+                    <div class="chunk-card-header">
+                        <span class="chunk-meta-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                            Page 2 · Chunk 1
+                        </span>
+                        <span class="similarity-score-pill">0.3389</span>
+                    </div>
+                    <p class="chunk-text-snippet">Chunking strategies are crucial for effective retrieval. A typical chunk size is around 600 words with an overlap of 80 words...</p>
+                    <div class="chunk-card-footer">
+                        <span class="expand-label">Click to view passage</span>
+                        <svg class="expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    </div>
+                </div>
+
+                <!-- Chunk Card 3 -->
+                <div class="chunk-card" onclick="inspectChunkDetail(2)">
+                    <div class="chunk-card-header">
+                        <span class="chunk-meta-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                            Page 3 · Chunk 2
+                        </span>
+                        <span class="similarity-score-pill">0.1606</span>
+                    </div>
+                    <p class="chunk-text-snippet">Evaluation metrics such as Precision@K, Recall@K and Mean Reciprocal Rank (MRR) are commonly used to measure retrieval performance...</p>
+                    <div class="chunk-card-footer">
+                        <span class="expand-label">Click to view passage</span>
+                        <svg class="expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Document Info Section (Bottom Right) -->
+            <div class="document-info-card">
+                <div class="doc-info-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    <span>Document Info</span>
+                </div>
+
+                <div class="doc-info-rows">
+                    <div class="doc-info-row">
+                        <span class="info-label">File Name</span>
+                        <span class="info-val font-bold" id="infoDocName">sample_nlp_paper.pdf</span>
+                    </div>
+                    <div class="doc-info-row">
+                        <span class="info-label">Total Pages</span>
+                        <span class="info-val" id="infoTotalPages">3</span>
+                    </div>
+                    <div class="doc-info-row">
+                        <span class="info-label">Total Chunks</span>
+                        <span class="info-val" id="infoTotalChunks">3</span>
+                    </div>
+                    <div class="doc-info-row">
+                        <span class="info-label">Processing Time</span>
+                        <span class="info-val" id="infoProcTime">2.4s</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- ==================== MODALS & DRAWERS ==================== -->
+
+    <!-- 1. PASSAGE INSPECTOR DRAWER / MODAL -->
+    <div class="modal-overlay" id="passageModal">
+        <div class="modal-dialog passage-modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title-row">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    <h3 id="modalPassageTitle">Retrieved Passage Inspection</h3>
+                </div>
+                <button class="modal-close-btn" onclick="closeModal('passageModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="passage-meta-bar">
+                    <span class="meta-pill" id="modalMetaDoc">sample_nlp_paper.pdf</span>
+                    <span class="meta-pill" id="modalMetaPage">Page 1</span>
+                    <span class="meta-pill score-pill" id="modalMetaScore">Score: 0.3810</span>
+                    <span class="meta-pill" id="modalMetaWords">209 words</span>
+                </div>
+                <div class="passage-text-box">
+                    <pre id="modalPassageText">Loading passage content...</pre>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('passageModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. UPLOAD MODAL -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title-row">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <h3>Upload PDF Documents</h3>
+                </div>
+                <button class="modal-close-btn" onclick="closeModal('uploadModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="dropzone-area" id="dropZone">
+                    <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                        <polyline points="9 15 12 12 15 15"></polyline>
+                    </svg>
+                    <h4>Drag & drop your PDF documents here</h4>
+                    <p>or click to select files from your computer</p>
+                    <input type="file" id="fileInput" multiple accept=".pdf" style="display: none;">
+                    <button type="button" class="btn btn-primary" onclick="document.getElementById('fileInput').click()">Browse Files</button>
+                </div>
+                
+                <div id="uploadProgress" class="upload-progress-box" style="display: none;">
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill" id="uploadProgressBar"></div>
+                    </div>
+                    <span id="uploadProgressText">Processing PDF text and embeddings...</span>
+                </div>
+
+                <div id="uploadedFilesList" class="uploaded-files-list"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('uploadModal')">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. DOCUMENT LIBRARY MODAL -->
+    <div class="modal-overlay" id="libraryModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title-row">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    <h3>Document Library</h3>
+                </div>
+                <button class="modal-close-btn" onclick="closeModal('libraryModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="libraryDocsList" class="library-docs-list"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('libraryModal')">Close</button>
+                <button class="btn btn-primary" onclick="loadSampleDoc()">Reload Sample Document</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. SETTINGS MODAL -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title-row">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <h3>Settings & Configuration</h3>
+                </div>
+                <button class="modal-close-btn" onclick="closeModal('settingsModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-group">
+                    <label class="form-label">Generation Model</label>
+                    <input type="text" id="settingsModel" value="gemini-2.5-flash" class="form-input" readonly>
+                </div>
+                <div class="settings-group">
+                    <label class="form-label">Dense Embedding Model</label>
+                    <input type="text" value="sentence-transformers/all-MiniLM-L6-v2 (384-d)" class="form-input" readonly>
+                </div>
+                <div class="settings-group">
+                    <label class="form-label">Reset Session & Index</label>
+                    <p class="form-help">Wipe currently indexed chunks and start fresh.</p>
+                    <button class="btn btn-danger" onclick="clearSession()">Clear Current Index & Chat</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('settingsModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
