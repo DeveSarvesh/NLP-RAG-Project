@@ -33,6 +33,7 @@ class EmbeddingService:
         """Lazy loader for SentenceTransformer model."""
         if self._model is None:
             try:
+                # pyrefly: ignore [missing-import]
                 from sentence_transformers import SentenceTransformer
                 # Load model onto CPU (or GPU if available)
                 self._model = SentenceTransformer(self.model_name)

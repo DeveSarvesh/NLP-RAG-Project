@@ -7,6 +7,7 @@ and performs text cleaning and validation.
 import os
 import re
 from typing import List, Dict, Any, Union
+# pyrefly: ignore [missing-import]
 import pymupdf  # PyMuPDF
 
 

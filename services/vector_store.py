@@ -8,6 +8,7 @@ import os
 import json
 from typing import List, Dict, Any, Tuple, Optional
 import numpy as np
+# pyrefly: ignore [missing-import]
 import faiss
 
 

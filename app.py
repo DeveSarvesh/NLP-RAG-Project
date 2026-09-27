@@ -10,6 +10,7 @@ import json
 from typing import List, Dict, Any
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
+# pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
 
 # Load environment variables
